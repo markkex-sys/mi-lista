@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi Lista Inteligente — Prototipo</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#18212f;background:#f4f6f8}
+*{box-sizing:border-box}body{margin:0}header{background:#fff;padding:22px 18px 16px;border-bottom:1px solid #e4e8ed;position:sticky;top:0}
+h1{font-size:25px;margin:0 0 5px}header p{margin:0;color:#687386;font-size:14px}
+main{max-width:520px;margin:auto;padding:16px 14px 36px}.card{background:white;border:1px solid #e4e8ed;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 3px 12px #14243a08}
+h2{font-size:17px;margin:0 0 12px}.row{display:flex;gap:8px}input,select{font:inherit;min-width:0;width:100%;padding:12px;border:1px solid #d7dde5;border-radius:11px;background:#fff}
+button{font:inherit;border:0;border-radius:11px;padding:12px 14px;background:#1c5f50;color:#fff;font-weight:600;cursor:pointer}button.secondary{background:#edf3f1;color:#1c5f50}button.dark{background:#263446}button:active{transform:scale(.98)}
+.controls{display:flex;gap:8px;margin-top:9px}.controls button{flex:1}
+ul{list-style:none;margin:0;padding:0}.item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #edf0f3}.item:last-child{border-bottom:0}.item label{flex:1;overflow-wrap:anywhere}.item small{display:block;color:#778194;margin-top:3px}.item input[type=checkbox]{width:20px;height:20px;accent-color:#1c5f50}.remove{padding:7px 10px;background:#fbeeee;color:#a33838}
+.pill{display:inline-block;font-size:12px;background:#edf3f1;color:#1c5f50;padding:5px 8px;border-radius:99px;margin:2px 3px 2px 0}
+.notice{display:none;border-radius:13px;background:#fff5d9;border:1px solid #f0d68a;padding:13px;margin-top:12px;line-height:1.4}.notice.show{display:block}
+.muted{font-size:13px;color:#687386;line-height:1.45}.footer{text-align:center;color:#778194;font-size:12px;padding:5px 15px 20px}
+</style>
+</head>
+<body>
+<header><h1>Mi lista inteligente</h1><p>Añade tus productos por voz o escribiendo.</p></header>
+<main>
+<section class="card">
+<h2>➕ Añadir a mi lista</h2>
+<div class="row"><input id="product" placeholder="Ej. leche, bombillas, estantería" aria-label="Nombre del producto"><button id="add">Añadir</button></div>
+<div class="controls"><button class="secondary" id="voice">🎙️ Dictar</button><button class="secondary" id="soundTest">🔔 Probar sonido</button></div>
+<div style="margin-top:10px"><select id="category" aria-label="Categoría"><option>Alimentación</option><option>Hogar</option><option>Ferretería</option><option>Muebles</option><option>Higiene</option><option>Otros</option></select></div>
+<p class="muted" id="voiceStatus">Puedes escribir o dictar un producto. El dictado depende del navegador y sus permisos.</p>
+</section>
+<section class="card">
+<h2>🛒 Lo que tengo pendiente <span id="count" class="pill">0 productos</span></h2>
+<ul id="list"><li class="muted">Tu lista está vacía. Añade tu primer producto arriba.</li></ul>
+</section>
+<section class="card">
+<h2>📍 Aviso al entrar en una tienda</h2>
+<p class="muted">En esta maqueta puedes simular que entras en un establecimiento. La detección automática real por ubicación todavía no está conectada.</p>
+<div class="row"><select id="store" aria-label="Tipo de establecimiento"><option value="Alimentación">Supermercado / alimentación</option><option value="Ferretería">Ferretería</option><option value="Muebles">Muebles</option><option value="Hogar">Tienda de hogar</option><option value="Higiene">Perfumería / higiene</option><option value="Otros">Otro establecimiento</option></select><button id="enter">Simular entrada</button></div>
+<div id="notice" class="notice" role="status"></div>
+</section>
+<section class="card">
+<h2>⚙️ Preferencias</h2>
+<label class="muted" style="display:flex;gap:9px;align-items:center"><input id="soundOn" type="checkbox" checked style="width:20px"> Sonido activado para los avisos de prueba</label>
+<p class="muted">Esta versión guarda la lista en este navegador. No envía datos a ningún sitio.</p>
+</section>
+<div class="footer">Prototipo de prueba · No es todavía una app instalada ni usa ubicación en segundo plano.</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let items=JSON.parse(localStorage.getItem('milista-items')||'[]');
+function save(){localStorage.setItem('milista-items',JSON.stringify(items));render()}
+function render(){
+ $('count').textContent=items.filter(x=>!x.done).length+' pendientes';
+ const list=$('list');list.innerHTML='';
+ if(!items.length){list.innerHTML='<li class="muted">Tu lista está vacía. Añade tu primer producto arriba.</li>';return}
+ items.forEach((it,i)=>{const li=document.createElement('li');li.className='item';
+ const cb=document.createElement('input');cb.type='checkbox';cb.checked=it.done;cb.setAttribute('aria-label','Marcar como comprado');cb.onchange=()=>{items[i].done=cb.checked;save()};
+ const label=document.createElement('label');label.textContent=it.name;label.style.textDecoration=it.done?'line-through':'none';const small=document.createElement('small');small.textContent=it.category;label.appendChild(small);
+ const del=document.createElement('button');del.className='remove';del.textContent='Quitar';del.onclick=()=>{items.splice(i,1);save()};
+ li.append(cb,label,del);list.appendChild(li)});
+}
+function addItem(){const name=$('product').value.trim();if(!name)return;items.push({name,category:$('category').value,done:false});$('product').value='';save();$('product').focus()}
+$('add').onclick=addItem;$('product').addEventListener('keydown',e=>{if(e.key==='Enter')addItem()});
+function beep(){if(!$('soundOn').checked)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ctx=new C();[660,880].forEach((freq,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=freq;o.connect(g);g.connect(ctx.destination);g.gain.setValueAtTime(.001,ctx.currentTime+i*.18);g.gain.exponentialRampToValueAtTime(.16,ctx.currentTime+i*.18+.02);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+i*.18+.14);o.start(ctx.currentTime+i*.18);o.stop(ctx.currentTime+i*.18+.15)});}catch(e){}}
+$('soundTest').onclick=()=>{beep();$('voiceStatus').textContent='Prueba de sonido activada. Si no lo oyes, revisa el volumen y los permisos del navegador.'};
+$('voice').onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){$('voiceStatus').textContent='El dictado no está disponible en este navegador. Puedes usar el micrófono del teclado del iPhone.';return}const r=new SR();r.lang='es-ES';r.onstart=()=>$('voiceStatus').textContent='Escuchando… di el nombre del producto.';r.onresult=e=>{$('product').value=e.results[0][0].transcript;$('voiceStatus').textContent='Texto reconocido. Elige la categoría y pulsa Añadir.'};r.onerror=()=>$('voiceStatus').textContent='No se pudo usar el dictado. Comprueba los permisos del micrófono.';r.start()};
+$('enter').onclick=()=>{const cat=$('store').value;const found=items.filter(x=>!x.done&&(x.category===cat||(cat==='Alimentación'&&x.category==='Alimentación')||(cat==='Hogar'&&['Hogar','Muebles','Ferretería'].includes(x.category))));const n=$('notice');n.className='notice show';if(found.length){n.textContent='🔔 Estás en un establecimiento de '+cat.toLowerCase()+'. Tienes pendiente: '+found.map(x=>x.name).join(', ')+'.';beep()}else{n.textContent='No hay productos pendientes de la categoría “'+cat+'” en tu lista.'}};
+render();
+</script>
+</body>
+</html>
